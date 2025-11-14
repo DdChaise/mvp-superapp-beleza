@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Eye, EyeOff, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, AlertCircle } from 'lucide-react';
 
 interface AuthFormProps {
   onSuccess: () => void;
@@ -16,6 +16,23 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [supabaseConfigured, setSupabaseConfigured] = useState(true);
+
+  useEffect(() => {
+    // Verificar se o Supabase está configurado
+    const checkSupabaseConfig = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error && error.message.includes('Invalid API key')) {
+          setSupabaseConfigured(false);
+        }
+      } catch (err) {
+        setSupabaseConfigured(false);
+      }
+    };
+
+    checkSupabaseConfig();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +86,40 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       setLoading(false);
     }
   };
+
+  if (!supabaseConfigured) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="bg-white rounded-3xl shadow-2xl p-8">
+          <div className="text-center mb-6">
+            <div className="bg-orange-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Configuração Necessária
+            </h2>
+            <p className="text-gray-600 mb-6">
+              O Supabase precisa ser configurado para que o sistema de autenticação funcione.
+            </p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-2">Como configurar:</h3>
+            <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+              <li>Clique em "Configurar" no banner laranja acima</li>
+              <li>Ou vá em Configurações → Integrações → Supabase</li>
+              <li>Conecte sua conta do Supabase</li>
+              <li>Execute o SQL disponível em <code className="bg-blue-100 px-1 rounded">supabase-setup.sql</code></li>
+            </ol>
+          </div>
+
+          <div className="text-center text-sm text-gray-500">
+            Após configurar, recarregue a página
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">
